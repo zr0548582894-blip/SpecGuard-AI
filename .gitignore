@@ -1,0 +1,15 @@
+# Secret files
+.env
+.env.*
+!.env.example
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+
+# Local editor settings
+.vscode/
