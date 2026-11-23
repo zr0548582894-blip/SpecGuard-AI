@@ -1,10 +1,13 @@
-"""SpecGuard AI: revised baseline evaluation in LangSmith.
+"""SpecGuard AI: improved requirements evaluation in LangSmith.
 
 Run from the project directory after configuring .env:
     python evaluate_baseline_v2.py
 
-Evaluates the original analysis prompt independently of the interactive main.py.
-The v2 dataset is intentionally separate from the original baseline dataset.
+Evaluates the improved analysis prompt independently of
+the interactive main.py.
+
+Uses the existing v2 evaluation dataset for comparison
+with the baseline-v2 experiment.
 """
 
 import truststore
@@ -73,21 +76,45 @@ def analyze_with_fallback(prompt: str) -> RequirementsAnalysis:
 
 
 def predict(inputs: dict) -> dict:
-    # Original baseline prompt, unchanged. The improved prompt comes later.
+    # Improved prompt: aligned with analyze_project in main.py.
     prompt = f"""
     You are an expert software requirements analyst.
+
     Project description:
     {inputs['project_description']}
+
     Required analysis depth:
     {inputs['analysis_depth']}
+
     Analyze the requirements according to the selected depth.
+
+    Only include requirements explicitly stated by the user
+    or directly supported by the project description.
+
+    Do not invent, assume, or add common software features
+    that the user has not requested.
+
+    If a potentially important feature is not confirmed,
+    do not include it in identified_requirements.
+    If essential, document it in missing_information
+    and consider asking a clarification question.
+
+    Distinguish confirmed requirements from missing
+    information and assumptions.
+
+    Identify contradictions between stated requirements
+    without resolving them by inventing new requirements.
+
     Ask a clarification question only if the missing
     information is essential for that depth.
+
     Do not ask about optional details that can be
     documented as open questions or assumptions.
+
     If the requirements are sufficiently clear for
     the selected depth, set needs_clarification to False.
     """
+
     return analyze_with_fallback(prompt).model_dump()
 
 
@@ -167,17 +194,16 @@ def main() -> None:
         )
         print(f"Created dataset: {DATASET_NAME} ({len(EXAMPLES)} examples)")
 
-    print("Running original baseline prompt against revised evaluation rubric...")
+    print("Running improved prompt against revised evaluation rubric...")
     evaluate(
         predict,
         data=DATASET_NAME,
         evaluators=[requirement_coverage, unsupported_features, contradiction_detection],
-        experiment_prefix="SpecGuard-Baseline-v2",
+        experiment_prefix="SpecGuard-Improved-v2",
         max_concurrency=1,
         client=client,
     )
-    print("Open LangSmith > Datasets & Experiments to inspect the baseline-v2 experiment.")
-
+    print("Open LangSmith > Datasets & Experiments to inspect the improved-v2 experiment.")
 
 if __name__ == "__main__":
     main()
